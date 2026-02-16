@@ -1,0 +1,3 @@
+1)
+Requirements.txt está sendo utilizado nas pastas fastapi e pydantic_puro.
+A pasta do projeto do dunossauro está utilizando poetry
