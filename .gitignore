@@ -1,5 +1,6 @@
 .venv
 .env
 .env.*
-pycache
+__pycache__
 ~$dem*
+*.db
