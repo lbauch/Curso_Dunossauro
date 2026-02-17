@@ -31,13 +31,23 @@ def session():
 # Utilizado como hook.
 # created_at somente é gerado no banco. Precisa de um suporte para validá-lo.
 def _mock_db_time(*, model=User, time=datetime(2025, 5, 20)):
-    def fake_time_hook(mapper, connection, target):
+    def fake_insert_time_hook(mapper, connection, target):
         if hasattr(target, 'created_at'):
             target.created_at = time
+        if hasattr(target, 'updated_at'):
+            target.updated_at = time
 
-    event.listen(model, 'before_insert', fake_time_hook)
+    def fake_update_time_hook(mapper, connection, target):
+        if hasattr(target, 'updated_at'):
+            target.updated_at = time
+
+    event.listen(model, 'before_insert', fake_insert_time_hook)
+    event.listen(model, 'before_update', fake_update_time_hook)
+
     yield time
-    event.remove(model, 'before_insert', fake_time_hook)
+
+    event.remove(model, 'before_insert', fake_insert_time_hook)
+    event.remove(model, 'before_update', fake_update_time_hook)
 
 
 @pytest.fixture
