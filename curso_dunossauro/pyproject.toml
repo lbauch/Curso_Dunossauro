@@ -32,6 +32,9 @@ extend-exclude = ['migrations']
 preview = true
 select = ['I', 'F', 'E', 'W', 'PL', 'PT']
 
+[tool.ruff.format]
+quote-style = "single"
+
 [tool.pytest.ini_options]
 pythonpath = "."
 addopts = '-p no:warnings'
@@ -40,8 +43,9 @@ addopts = '-p no:warnings'
 lint = 'ruff check'
 pre_format = 'ruff check --fix'
 format = 'ruff format'
+pre_run_dev = 'task format'
 run_dev = 'fastapi dev curso_dunossauro/app.py'
 run_prod = 'fastapi curso_dunossauro/app.py --host 0.0.0.0'
-pre_test = 'task lint'
+pre_test = 'task format'
 test = 'pytest -s --maxfail=5 --cov=curso_dunossauro -vv'
-pos_test = 'coverage html'
+post_test = 'coverage html'
