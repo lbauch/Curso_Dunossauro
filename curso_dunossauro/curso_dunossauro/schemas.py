@@ -20,3 +20,8 @@ class UserSchema(BaseModel):
 
 class UserDB(UserSchema):
     id: int
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str

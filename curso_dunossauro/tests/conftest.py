@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 from curso_dunossauro.app import app
 from curso_dunossauro.database import get_session
 from curso_dunossauro.models import User, table_registry
+from curso_dunossauro.security import get_password_hash
 
 
 @pytest.fixture
@@ -71,13 +72,27 @@ def mock_db_time():
 
 @pytest.fixture
 def user(session):
+    password = 'minhaSenha1'
     user = User(
         username='meu_username1',
         email='meu_email1@meuemail.com',
-        password='minhaSenha1',
+        password=get_password_hash(password),
     )
     session.add(user)
     session.commit()
     session.refresh(user)
 
+    # Mantém a senha limpa em tempo de execução.
+    # Útil para testar a geração do token em teste_app::test_get_token
+    user.clean_password = password
+
     return user
+
+
+@pytest.fixture
+def token(client, user):
+    response = client.post(
+        '/token',
+        data={'username': user.email, 'password': user.clean_password},
+    )
+    return response.json()['access_token']
