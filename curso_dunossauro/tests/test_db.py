@@ -27,7 +27,6 @@ def test_create_user(session, mock_db_time):
             'created_at': time,
             'updated_at': time,
         }
-    # assert user.id == 1
 
 
 def test_update_user(session, mock_db_time):
