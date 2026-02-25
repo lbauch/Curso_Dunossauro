@@ -11,6 +11,7 @@ from curso_dunossauro.app import app
 from curso_dunossauro.database import get_session
 from curso_dunossauro.models import User, table_registry
 from curso_dunossauro.security import get_password_hash
+from curso_dunossauro.settings import Settings
 
 
 @pytest.fixture
@@ -92,7 +93,12 @@ def user(session):
 @pytest.fixture
 def token(client, user):
     response = client.post(
-        '/token',
+        '/auth/token',
         data={'username': user.email, 'password': user.clean_password},
     )
     return response.json()['access_token']
+
+
+@pytest.fixture
+def settings():
+    return Settings()

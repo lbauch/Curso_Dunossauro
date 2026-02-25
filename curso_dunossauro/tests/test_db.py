@@ -7,6 +7,9 @@ from curso_dunossauro.models import User
 
 
 def test_create_user(session, mock_db_time):
+    """
+    Testa a criação do usuário no banco e valida conexão com banco.
+    """
     with mock_db_time(model=User, time=datetime.now()) as time:
         new_user = User(
             username='teste', email='teste@teste.com', password='senha1'
@@ -30,6 +33,9 @@ def test_create_user(session, mock_db_time):
 
 
 def test_update_user(session, mock_db_time):
+    """
+    Testa a atualização do usuário no banco e valida conexão com banco.
+    """
     initial_time = datetime(2025, 5, 20)
     updated_time = datetime(2025, 5, 21)
 
