@@ -1,12 +1,15 @@
 from dataclasses import asdict
 from datetime import datetime
 
+import pytest
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from curso_dunossauro.models import User
 
 
-def test_create_user(session, mock_db_time):
+@pytest.mark.asyncio
+async def test_create_user(session: AsyncSession, mock_db_time):
     """
     Testa a criação do usuário no banco e valida conexão com banco.
     """
@@ -16,9 +19,9 @@ def test_create_user(session, mock_db_time):
         )
 
         session.add(new_user)
-        session.commit()
+        await session.commit()
 
-        user = session.scalar(  # Converte o valor em um objeto python
+        user = await session.scalar(  # Converte valor em objeto python
             select(User).where(User.username == 'teste')
         )
 
@@ -32,7 +35,8 @@ def test_create_user(session, mock_db_time):
         }
 
 
-def test_update_user(session, mock_db_time):
+@pytest.mark.asyncio
+async def test_update_user(session: AsyncSession, mock_db_time):
     """
     Testa a atualização do usuário no banco e valida conexão com banco.
     """
@@ -47,14 +51,14 @@ def test_update_user(session, mock_db_time):
             password='senha1',
         )
         session.add(user)
-        session.commit()
+        await session.commit()
 
     # Atualização
     with mock_db_time(model=User, time=updated_time):
         user.username = 'teste2'
-        session.commit()
+        await session.commit()
 
-    session.refresh(user)
+    await session.refresh(user)
 
     assert user.username == 'teste2'
     assert user.created_at == initial_time

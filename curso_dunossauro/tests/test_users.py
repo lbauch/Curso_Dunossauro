@@ -97,7 +97,6 @@ def test_get_users_by_invalid_id(client):
     Returns: NOT FOUND
     """
     response = client.get('/users/-1')
-
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 

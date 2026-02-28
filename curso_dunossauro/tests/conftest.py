@@ -2,9 +2,10 @@ from contextlib import contextmanager
 from datetime import datetime
 
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import Session
+from sqlalchemy import event
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from curso_dunossauro.app import app
@@ -15,7 +16,7 @@ from curso_dunossauro.settings import Settings
 
 
 @pytest.fixture
-def client(session):
+def client(session: AsyncSession):
 
     def get_session_override():
         return session
@@ -27,20 +28,32 @@ def client(session):
     app.dependency_overrides.clear()
 
 
-@pytest.fixture
-def session():
-    engine = create_engine(
-        'sqlite:///:memory:',
+@pytest_asyncio.fixture
+async def session():
+    engine = create_async_engine(
+        'sqlite+aiosqlite:///:memory:',
         connect_args={'check_same_thread': False},
         poolclass=StaticPool,
     )
-    table_registry.metadata.create_all(engine)
+    # O método begin() do engine é usado para iniciar uma transação no
+    # banco de dados. O engine cria uma conexão assíncrona e,
+    # ao usar begin(), estamos dizendo ao SQLAlchemy para iniciar
+    # uma transação dentro do contexto de execução assíncrona.
+    # Ele é necessário para que possamos executar operações no
+    # banco de dados de forma eficiente e transacional.
+    async with engine.begin() as conn:
+        # O run_sync é uma forma de rodar código síncrono dentro de
+        # um ambiente assíncrono. No caso do SQLAlchemy, ele é usado
+        # para executar operações que não são assíncronas
+        # (como a criação de tabelas) enquanto ainda estamos
+        # entro do loop de eventos assíncrono.
+        await conn.run_sync(table_registry.metadata.create_all)
 
-    with Session(engine) as session:
+    async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session
 
-    table_registry.metadata.drop_all(engine)
-    engine.dispose()
+    async with engine.begin() as conn:
+        await conn.run_sync(table_registry.metadata.drop_all)
 
 
 @contextmanager
@@ -71,8 +84,8 @@ def mock_db_time():
     return _mock_db_time
 
 
-@pytest.fixture
-def user(session):
+@pytest_asyncio.fixture
+async def user(session: AsyncSession):
     password = 'minhaSenha1'
     user = User(
         username='meu_username1',
@@ -80,8 +93,8 @@ def user(session):
         password=get_password_hash(password),
     )
     session.add(user)
-    session.commit()
-    session.refresh(user)
+    await session.commit()
+    await session.refresh(user)
 
     # Mantém a senha limpa em tempo de execução.
     # Útil para testar a geração do token em teste_app::test_get_token

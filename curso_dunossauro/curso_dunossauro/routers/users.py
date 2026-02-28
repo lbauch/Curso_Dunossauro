@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from curso_dunossauro.database import get_session
 from curso_dunossauro.models import User
@@ -19,13 +19,13 @@ from curso_dunossauro.security import get_current_user, get_password_hash
 router = APIRouter(prefix='/users', tags=['users'])
 # Variáveis de tipos são utilizadas com CamelCase. Utiliza-se:
 # T_TipoDaVariavelOriginal - Boa prática: https://peps.python.org/pep-0008/#type-variable-names
-T_Session = Annotated[Session, Depends(get_session)]
+T_Session = Annotated[AsyncSession, Depends(get_session)]
 T_User = Annotated[User, Depends(get_current_user)]
 
 
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=UserPublic)
-def create_user(user: UserSchema, session: T_Session):
-    db_user = session.scalar(
+async def create_user(user: UserSchema, session: T_Session):
+    db_user = await session.scalar(
         select(User).where(
             (User.username == user.username) | (User.email == user.email)
         )
@@ -42,28 +42,28 @@ def create_user(user: UserSchema, session: T_Session):
     )
 
     session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
+    await session.commit()
+    await session.refresh(db_user)
 
     return db_user
 
 
 @router.get('/', status_code=HTTPStatus.OK, response_model=list[UserPublic])
-def read_users(
+async def read_users(
     session: T_Session,
     current_user: T_User,
     # Utilizado desta forma para mostrar que são query strings, não params
     filter_users: Annotated[FilterPage, Query()],
 ):
-    users = session.scalars(
+    users = await session.scalars(
         select(User).limit(filter_users.limit).offset(filter_users.offset)
     )
     return users
 
 
 @router.get('/{user_id}', status_code=HTTPStatus.OK, response_model=UserPublic)
-def read_user_by_id(user_id: int, session: T_Session):
-    user_db = session.scalar(select(User).where(User.id == user_id))
+async def read_user_by_id(user_id: int, session: T_Session):
+    user_db = await session.scalar(select(User).where(User.id == user_id))
     if not user_db:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail='User Not Found'
@@ -72,7 +72,7 @@ def read_user_by_id(user_id: int, session: T_Session):
 
 
 @router.put('/{user_id}', status_code=HTTPStatus.OK, response_model=UserPublic)
-def update_user(
+async def update_user(
     user_id: int,
     user: UserSchema,
     session: T_Session,
@@ -89,8 +89,8 @@ def update_user(
         current_user.password = get_password_hash(user.password)
 
         session.add(current_user)
-        session.commit()
-        session.refresh(current_user)  # Opcional
+        await session.commit()
+        await session.refresh(current_user)  # Opcional
 
     except IntegrityError:
         raise HTTPException(
@@ -106,7 +106,7 @@ def update_user(
     status_code=HTTPStatus.OK,
     response_model=Message,
 )
-def delete_user(
+async def delete_user(
     user_id: int,
     session: T_Session,
     current_user: T_User,
@@ -117,5 +117,5 @@ def delete_user(
         )
 
     session.delete(current_user)
-    session.commit()
+    await session.commit()
     return {'message': 'User Deleted'}
