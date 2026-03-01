@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from datetime import datetime
 
+import factory
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
@@ -35,18 +36,7 @@ async def session():
         connect_args={'check_same_thread': False},
         poolclass=StaticPool,
     )
-    # O método begin() do engine é usado para iniciar uma transação no
-    # banco de dados. O engine cria uma conexão assíncrona e,
-    # ao usar begin(), estamos dizendo ao SQLAlchemy para iniciar
-    # uma transação dentro do contexto de execução assíncrona.
-    # Ele é necessário para que possamos executar operações no
-    # banco de dados de forma eficiente e transacional.
     async with engine.begin() as conn:
-        # O run_sync é uma forma de rodar código síncrono dentro de
-        # um ambiente assíncrono. No caso do SQLAlchemy, ele é usado
-        # para executar operações que não são assíncronas
-        # (como a criação de tabelas) enquanto ainda estamos
-        # entro do loop de eventos assíncrono.
         await conn.run_sync(table_registry.metadata.create_all)
 
     async with AsyncSession(engine, expire_on_commit=False) as session:
@@ -57,8 +47,6 @@ async def session():
 
 
 @contextmanager
-# Utilizado como hook.
-# created_at somente é gerado no banco. Precisa de um suporte para validá-lo.
 def _mock_db_time(*, model=User, time=datetime(2025, 5, 20)):
     def fake_insert_time_hook(mapper, connection, target):
         if hasattr(target, 'created_at'):
@@ -87,17 +75,26 @@ def mock_db_time():
 @pytest_asyncio.fixture
 async def user(session: AsyncSession):
     password = 'minhaSenha1'
-    user = User(
-        username='meu_username1',
-        email='meu_email1@meuemail.com',
-        password=get_password_hash(password),
-    )
+
+    user = UserFactory(password=get_password_hash(password))
     session.add(user)
     await session.commit()
     await session.refresh(user)
 
-    # Mantém a senha limpa em tempo de execução.
-    # Útil para testar a geração do token em teste_app::test_get_token
+    user.clean_password = password
+
+    return user
+
+
+@pytest_asyncio.fixture
+async def other_user(session: AsyncSession):
+    password = 'minhaSenha1'
+
+    user = UserFactory(password=get_password_hash(password))
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+
     user.clean_password = password
 
     return user
@@ -115,3 +112,12 @@ def token(client, user):
 @pytest.fixture
 def settings():
     return Settings()
+
+
+class UserFactory(factory.Factory):
+    class Meta:
+        model = User
+
+    username = factory.Sequence(lambda n: f'test{n}')
+    email = factory.LazyAttribute(lambda obj: f'{obj.username}@test.com')
+    password = factory.LazyAttribute(lambda obj: f'{obj.username}.s3nH4')

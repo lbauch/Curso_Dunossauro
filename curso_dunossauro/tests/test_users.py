@@ -33,7 +33,7 @@ def test_create_user_username_integrity_error(client, user):
     response = client.post(
         '/users',
         json={
-            'username': 'meu_username1',
+            'username': user.username,
             'email': 'meu_email2@gmail.com',
             'password': 'pwd1',
         },
@@ -54,7 +54,7 @@ def test_create_user_email_integrity_error(client, user):
         '/users',
         json={
             'username': 'meu_user1',
-            'email': 'meu_email1@meuemail.com',
+            'email': user.email,
             'password': 'pwd1',
         },
     )
@@ -106,7 +106,7 @@ def test_update_user(client, user, token):
     Returns: OK
     """
     response = client.put(
-        '/users/1',
+        f'/users/{user.id}',
         headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'meu_user10',
@@ -123,25 +123,17 @@ def test_update_user(client, user, token):
     }
 
 
-def test_update_integrity_user_error(client, user, token):
+def test_update_integrity_user_error(client, user, other_user, token):
     """
     Testa atualizar email para algum email já existente.
     returns: CONFLICT
     """
-    client.post(
-        '/users',
-        json={
-            'username': 'UserTeste1',
-            'email': 'user_teste1@hotmail.com',
-            'password': 'pwdTeste1',
-        },
-    )
     response = client.put(
         f'/users/{user.id}',
         headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'UserTeste1',
-            'email': 'meu_email10@gmail.com',
+            'email': other_user.email,
             'password': 'pwd10',
         },
     )
@@ -152,21 +144,13 @@ def test_update_integrity_user_error(client, user, token):
     }
 
 
-def test_update_different_user(client, token):
+def test_update_different_user(client, other_user, token):
     """
     Testa o update quando o user é diferente do obtido pelo token.
     returns: FORBIDDEN
     """
-    client.post(
-        '/users',
-        json={
-            'username': 'UserTeste1',
-            'email': 'user_teste1@hotmail.com',
-            'password': 'pwdTeste1',
-        },
-    )
     response = client.put(
-        '/users/2',
+        f'/users/{other_user.id}',
         headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'UserTeste1',
@@ -193,21 +177,13 @@ def test_delete_user(client, user, token):
     assert response.json() == {'message': 'User Deleted'}
 
 
-def test_delete_different_user(client, token):
+def test_delete_different_user(client, other_user, token):
     """
     Testa deleção de um usuário por outro.
     returns: FORBIDDEN
     """
-    client.post(
-        '/users',
-        json={
-            'username': 'UserTeste1',
-            'email': 'user_teste1@hotmail.com',
-            'password': 'pwdTeste1',
-        },
-    )
     response = client.delete(
-        '/users/2',
+        f'/users/{other_user.id}',
         headers={'Authorization': f'Bearer {token}'},
     )
 
