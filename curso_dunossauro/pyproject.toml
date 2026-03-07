@@ -60,6 +60,8 @@ run_prod = 'fastapi curso_dunossauro/app.py --host 0.0.0.0'
 pre_test = 'task format'
 test = 'pytest -s --maxfail=5 --cov=curso_dunossauro -vv'
 post_test = 'coverage html'
+upgrade_db = 'alembic revision --autogenerate -m "Atualizando db"'
+post_upgrade_db = 'alembic upgrade head'
 
 [tool.coverage.run]
 concurrency = ["thread", "greenlet"]
