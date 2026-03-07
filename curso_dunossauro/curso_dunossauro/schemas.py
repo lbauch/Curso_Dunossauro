@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from curso_dunossauro.models import TodoState
@@ -11,6 +13,7 @@ class UserPublic(BaseModel):
     username: str
     email: EmailStr
     id: int
+    # Utilizado no model_validate()
     model_config = ConfigDict(from_attributes=True)  # chave padrão do pydantic
 
 
@@ -43,13 +46,17 @@ class TodoSchema(BaseModel):
 
 class TodoPublic(TodoSchema):
     id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class TodoUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    state: TodoState | None = None
 
 
 class FilterTodo(FilterPage):
     title: str | None = Field(default=None, min_length=3, max_length=15)
     description: str | None = None
     state: TodoState | None = None
-
-
-class TodoList(BaseModel):
-    list[TodoPublic]
