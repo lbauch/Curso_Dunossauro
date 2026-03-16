@@ -7,6 +7,10 @@ from alembic import context
 from curso_dunossauro.models import table_registry
 from curso_dunossauro.settings import Settings
 import asyncio
+import sys
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

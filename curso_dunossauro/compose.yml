@@ -1,0 +1,25 @@
+services:
+  curso_du_database:
+    image: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_DB: app_db
+      POSTGRES_PASSWORD: app_password
+    ports:
+      - "5432:5432"
+
+  curso_dunossauro:
+    image: curso_dunossauro
+    build: .
+    entrypoint: ./entrypoint.sh
+    ports:
+      - "8000:8000"
+    depends_on:
+      - curso_du_database
+    environment:
+      DATABASE_URL: postgresql+psycopg://app_user:app_password@curso_du_database:5432/app_db
+
+volumes:
+  pgdata:

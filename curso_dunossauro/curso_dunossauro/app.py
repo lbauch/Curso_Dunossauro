@@ -1,3 +1,5 @@
+import asyncio
+import sys
 from http import HTTPStatus
 
 from fastapi import FastAPI
@@ -5,6 +7,9 @@ from fastapi import FastAPI
 from curso_dunossauro.schemas import Message
 
 from .routers import auth_router, todos_router, users_router
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 app = FastAPI(title='Api curso Dunossauro', version='0.1.0')
 
